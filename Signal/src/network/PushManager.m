@@ -10,6 +10,8 @@
 
 #import "ContactsManager.h"
 #import "InCallViewController.h"
+#import "NSDate+millisecondTimeStamp.h"
+#import "TSMessagesManager+sendMessages.h"
 #import "NotificationTracker.h"
 
 #import "PreferencesUtil.h"
@@ -174,6 +176,29 @@
     }
 }
 
+- (void)application:(UIApplication *)application handleActionWithIdentifier:(NSString *)identifier forLocalNotification:(UILocalNotification *)notification withResponseInfo:(NSDictionary *)responseInfo completionHandler:(void (^)())completionHandler {
+    
+    if ([identifier isEqualToString:Signal_Message_View_Identifier]) {
+        NSString *threadId = [notification.userInfo objectForKey:Signal_Thread_UserInfo_Key];
+        UILocalNotification *notification2 = [[UILocalNotification alloc] init];
+        notification2.alertBody = @"Motherfucker method ran";
+        [application presentLocalNotificationNow:notification2];
+        
+        if (threadId) {
+            TSThread *thread = [TSThread fetchObjectWithUniqueID:threadId];
+            TSOutgoingMessage *message = [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp] inThread:thread messageBody:[responseInfo objectForKey:UIUserNotificationActionResponseTypedTextKey] attachments:nil];
+            [[TSMessagesManager sharedManager] sendMessage:message inThread:thread];
+            UILocalNotification *notification3 = [[UILocalNotification alloc] init];
+            notification3.alertBody = @"Motherfucker method ran2";
+            [application presentLocalNotificationNow:notification3];
+        }
+    }
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC),
+                   dispatch_get_main_queue(), ^{
+                       completionHandler();
+                   });
+}
+
 - (BOOL)isRedPhonePush:(NSDictionary*)pushDict {
     NSDictionary *aps  = [pushDict objectForKey:@"aps"];
     NSString *category = [aps      objectForKey:@"category"];
@@ -322,20 +347,26 @@
     return self.userNotificationFutureSource.future;
 }
 
-- (UIUserNotificationCategory*)userNotificationsMessageCategory{
-    UIMutableUserNotificationAction *action_view  = [UIMutableUserNotificationAction new];
-    action_view.identifier                        = Signal_Message_View_Identifier;
-    action_view.title                             = NSLocalizedString(@"PUSH_MANAGER_VIEW", @"");
-    action_view.activationMode                    = UIUserNotificationActivationModeForeground;
-    action_view.destructive                       = NO;
-    action_view.authenticationRequired            = YES;
+- (UIUserNotificationCategory*)userNotificationsMessageCategory
+{
     
-    UIMutableUserNotificationCategory *messageCategory = [UIMutableUserNotificationCategory new];
-    messageCategory.identifier = Signal_Message_Category;
-    [messageCategory setActions:@[action_view] forContext:UIUserNotificationActionContextMinimal];
-    [messageCategory setActions:@[action_view] forContext:UIUserNotificationActionContextDefault];
-    
-    return messageCategory;
+        UIMutableUserNotificationAction *action_view  = [UIMutableUserNotificationAction new];
+        action_view.identifier                        = Signal_Message_View_Identifier;
+        action_view.title                             = NSLocalizedString(@"PUSH_MANAGER_VIEW", @"");
+        action_view.destructive                       = NO;
+        action_view.authenticationRequired            = YES;
+        if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(_iOS_9)) {
+            action_view.behavior                      = UIUserNotificationActionBehaviorTextInput;
+            action_view.activationMode                = UIUserNotificationActivationModeBackground;
+        } else {
+            action_view.activationMode                = UIUserNotificationActivationModeForeground;
+        }
+        UIMutableUserNotificationCategory *messageCategory = [UIMutableUserNotificationCategory new];
+        messageCategory.identifier = Signal_Message_Category;
+        [messageCategory setActions:@[action_view] forContext:UIUserNotificationActionContextMinimal];
+        [messageCategory setActions:@[action_view] forContext:UIUserNotificationActionContextDefault];
+        
+        return messageCategory;
 }
 
 - (UIUserNotificationCategory*)userNotificationsCallCategory{

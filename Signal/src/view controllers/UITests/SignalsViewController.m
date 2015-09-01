@@ -10,7 +10,6 @@
 #import "InboxTableViewCell.h"
 
 #import "ContactsManager.h"
-#import "Environment.h"
 #import "MessagesViewController.h"
 #import "SignalsViewController.h"
 #import "InCallViewController.h"
@@ -31,7 +30,6 @@
 
 static NSString *const inboxTableViewCell   = @"inBoxTableViewCell";
 static NSString *const kSegueIndentifier    = @"showSegue";
-static NSString* const kCallSegue           = @"2.0_6.0_Call_Segue";
 static NSString* const kShowSignupFlowSegue = @"showSignupFlow";
 
 @interface SignalsViewController ()
@@ -123,8 +121,7 @@ static NSString* const kShowSignupFlowSegue = @"showSignupFlow";
     TSThread *thread         = [self threadForIndexPath:indexPath];
     
     if (!cell) {
-        cell = [[InboxTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault
-                                         reuseIdentifier:inboxTableViewCell];
+        cell = [InboxTableViewCell inboxTableViewCell];
         cell.delegate = self;
     }
     
@@ -202,7 +199,7 @@ static NSString* const kShowSignupFlowSegue = @"showSignupFlow";
     BOOL viewingThreadsIn = self.viewingThreadsIn;
     [self.editingDbConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
         viewingThreadsIn == kInboxState ? [thread archiveThreadWithTransaction:transaction] : [thread unarchiveThreadWithTransaction:transaction];
-                                        
+        
     }];
     [self checkIfEmptyView];
 }
@@ -280,7 +277,7 @@ static NSString* const kShowSignupFlowSegue = @"showSignupFlow";
     self.threadMappings = [[YapDatabaseViewMappings alloc] initWithGroups:@[grouping]
                                                                      view:TSThreadDatabaseViewExtensionName];
     [self.threadMappings setIsReversed:YES forGroup:grouping];
-
+    
     [self.uiDatabaseConnection asyncReadWithBlock:^(YapDatabaseReadTransaction *transaction){
         [self.threadMappings updateWithTransaction:transaction];
         

@@ -266,6 +266,10 @@ static NSString * const kURLHostVerifyPrefix = @"verify";
     [[PushManager sharedManager] application:application handleActionWithIdentifier:identifier forLocalNotification:notification completionHandler:completionHandler];
 }
 
+- (void)application:(UIApplication *)application handleActionWithIdentifier:(NSString *)identifier forLocalNotification:(UILocalNotification *)notification withResponseInfo:(NSDictionary *)responseInfo completionHandler:(void (^)())completionHandler {
+    [[PushManager sharedManager] application:application handleActionWithIdentifier:identifier forLocalNotification:notification withResponseInfo:responseInfo completionHandler:completionHandler];
+}
+
 /**
  *  Signal requires an iPhone to be unlocked after reboot to be able to access keying material.
  */
